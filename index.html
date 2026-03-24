@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Privé | Authentification</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f0f0f; color: white;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #login-container {
+            text-align: center; background: #1e1e1e;
+            padding: 40px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        input {
+            padding: 12px; width: 250px; border-radius: 6px;
+            border: 1px solid #333; background: #121212; color: white;
+            margin-bottom: 20px; font-size: 16px;
+        }
+        button {
+            padding: 12px 24px; border-radius: 6px; border: none;
+            background: #ff4757; color: white; cursor: pointer;
+            font-weight: bold; transition: 0.3s;
+        }
+        button:hover { background: #ff6b81; }
+        #stream-container {
+            display: none; width: 100%; height: 100%;
+        }
+        iframe {
+            width: 100%; height: 100%; border: none;
+        }
+        .error { color: #ff4757; margin-top: 10px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="login-container">
+        <h2>Accès au Stream</h2>
+        <p>Veuillez entrer le code d'accès</p>
+        <input type="password" id="password" placeholder="Mot de passe...">
+        <br>
+        <button onclick="checkAuth()">Se connecter</button>
+        <div id="error-msg" class="error">Mot de passe incorrect.</div>
+    </div>
+
+    <div id="stream-container">
+        <iframe id="ninja-frame" 
+            src="" 
+            allow="autoplay; camera; microphone; fullscreen; display-capture;">
+        </iframe>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const SECRET_PASSWORD = "6TchuStream012"; // Changez-le ici
+        const NINJA_ID = "CameraFpvmID"; // Votre ID de salle/flux
+        // ---------------------
+
+        function checkAuth() {
+            const input = document.getElementById('password').value;
+            const error = document.getElementById('error-msg');
+            
+            if (input === SECRET_PASSWORD) {
+                // Succès : on masque le login et on affiche l'iframe
+                document.getElementById('login-container').style.display = 'none';
+                const container = document.getElementById('stream-container');
+                container.style.display = 'block';
+                
+                // On charge l'URL avec les paramètres d'autostart optimisés
+                const ninjaUrl = `https://vdo.ninja/?view=FiotazantsoaVDO2&solo&room=CameraFpvmID&password=VDOfpvm1234"&autoplay=1&autostart=1&cleanoutput=1&nomenu=1`;
+                document.getElementById('ninja-frame').src = ninjaUrl;
+            } else {
+                error.style.display = 'block';
+            }
+        }
+
+        // Permet de valider avec la touche "Entrée"
+        document.getElementById('password').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkAuth();
+        });
+    </script>
+</body>
+</html>
