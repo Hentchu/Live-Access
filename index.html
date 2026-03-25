@@ -299,13 +299,15 @@
         #stream-container {
             position: fixed;
             inset: 0;
-            display: none;
+            visibility: hidden;
             opacity: 0;
             transition: opacity 0.7s ease;
+            background: #000;
+            z-index: 5;
         }
 
         #stream-container.visible {
-            display: block;
+            visibility: visible;
             opacity: 1;
         }
 
@@ -314,6 +316,7 @@
             height: 100%;
             border: none;
             display: block;
+            background: #000;
         }
     </style>
 </head>
@@ -365,11 +368,42 @@
 
     <!-- ── Stream ── -->
     <div id="stream-container">
+
+        <!-- Écran de chargement -->
+        <div id="loading-screen" style="
+            position:absolute; inset:0; z-index:2;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            background:#080a0d;
+        ">
+            <div style="position:relative;width:64px;height:64px;margin-bottom:24px;">
+                <div style="
+                    position:absolute;inset:0;border-radius:50%;
+                    border:2px solid transparent;
+                    border-top-color:#ff4757;
+                    animation:spin 1s linear infinite;
+                "></div>
+                <div style="
+                    position:absolute;inset:10px;border-radius:50%;
+                    border:2px solid transparent;
+                    border-bottom-color:rgba(255,71,87,0.4);
+                    animation:spin 1.6s linear infinite reverse;
+                "></div>
+            </div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:0.2em;color:#ff4757;margin-bottom:8px;">CHARGEMENT DU STREAM</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:0.1em;color:#4a5568;" id="load-msg">Connexion en cours…</div>
+        </div>
+
         <iframe id="ninja-frame"
             src=""
-            allow="autoplay; camera; microphone; fullscreen; display-capture;">
+            allow="autoplay; camera; microphone; fullscreen; display-capture;"
+            style="position:relative;z-index:1;">
         </iframe>
     </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 
     <script>
         // ╔══════════════════════════════════════════════════════════╗
@@ -423,11 +457,11 @@
 
         // Auth check
         function checkAuth(e) {
-            const btn   = document.getElementById('submit-btn');
+            const btn        = document.getElementById('submit-btn');
             const loginInput = document.getElementById('login');
-            const input = document.getElementById('password');
-            const err   = document.getElementById('error-msg');
-            const panel = document.getElementById('panel');
+            const input      = document.getElementById('password');
+            const err        = document.getElementById('error-msg');
+            const panel      = document.getElementById('panel');
 
             spawnRipple(btn, e);
 
@@ -435,13 +469,43 @@
                 // Hide gate
                 document.getElementById('gate').classList.add('hidden');
 
-                // Show stream after transition
+                const container = document.getElementById('stream-container');
+                const frame     = document.getElementById('ninja-frame');
+
+                // Rendre visible immédiatement (fond noir déjà ok)
+                container.style.visibility = 'visible';
+                container.style.opacity    = '1';
+
+                // Charger l'iframe après un court délai
+                const msgs = ['Connexion en cours…','Authentification du flux…','Établissement P2P…','Synchronisation vidéo…','Presque prêt…'];
+                let mi = 0;
+                const msgTimer = setInterval(() => {
+                    mi = (mi + 1) % msgs.length;
+                    const el = document.getElementById('load-msg');
+                    if (el) el.textContent = msgs[mi];
+                }, 2500);
                 setTimeout(() => {
-                    const container = document.getElementById('stream-container');
-                    document.getElementById('ninja-frame').src = NINJA_URL;
-                    container.style.display = 'block';
-                    requestAnimationFrame(() => container.classList.add('visible'));
-                }, 600);
+                    frame.src = NINJA_URL;
+                }, 400);
+
+                // Fallback : si l'iframe ne charge pas en 8s, on recharge
+                const fallback = setTimeout(() => {
+                    if (!frame.src || frame.src === 'about:blank') {
+                        frame.src = NINJA_URL;
+                    }
+                }, 8000);
+
+                frame.onload = () => {
+                    clearTimeout(fallback);
+                    clearInterval(msgTimer);
+                    // Cacher l'écran de chargement
+                    const ls = document.getElementById('loading-screen');
+                    if (ls) {
+                        ls.style.transition = 'opacity 0.6s ease';
+                        ls.style.opacity = '0';
+                        setTimeout(() => ls.style.display = 'none', 600);
+                    }
+                };
 
             } else {
                 // Show error + shake panel
@@ -460,6 +524,22 @@
         // Enter key support
         document.getElementById('login').addEventListener('keydown', function (e) {
             if (e.key === 'Enter') document.getElementById('password').focus();
+        });
+        document.getElementById('password').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') document.getElementById('submit-btn').click();
+        });
+
+        // 🔒 Protection — désactive clic droit et raccourcis DevTools
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) ||
+                (e.ctrlKey && e.key.toUpperCase() === 'U')
+            ) {
+                e.preventDefault();
+                return false;
+            }
         });
     </script>
 </body>
