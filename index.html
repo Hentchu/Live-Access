@@ -301,14 +301,9 @@
             inset: 0;
             visibility: hidden;
             opacity: 0;
-            transition: opacity 0.7s ease;
+            display: block;
             background: #000;
             z-index: 5;
-        }
-
-        #stream-container.visible {
-            visibility: visible;
-            opacity: 1;
         }
 
         #ninja-frame {
@@ -417,16 +412,24 @@
         const NINJA_URL       = `https://vdo.ninja/?view=Hentchu&solo&room=${NINJA_ID}&password=VDOfpvm1234&bitrate=10000&scale=100&clean&buffer=0&autoplay=1&autostart=1&cleanoutput=1&nomenu=1`;
         // ──────────────────────────────────────────────────────────
 
-        // ── Vérification au chargement de la page ──────────────────
-        // Si déjà authentifié dans cette session, afficher le stream directement
+        // ── Fonction principale d'affichage du stream ───────────────
         function launchStream() {
-            document.getElementById('gate').classList.add('hidden');
+            const gate      = document.getElementById('gate');
             const container = document.getElementById('stream-container');
             const frame     = document.getElementById('ninja-frame');
 
-            container.style.visibility = 'visible';
-            container.style.opacity    = '1';
+            // Cacher le gate sans transition
+            gate.style.transition = 'none';
+            gate.style.opacity    = '0';
+            gate.style.pointerEvents = 'none';
 
+            // Forcer le container visible SANS transition (évite l'écran noir)
+            container.style.transition  = 'none';
+            container.style.visibility  = 'visible';
+            container.style.opacity     = '1';
+            container.style.display     = 'block';
+
+            // Messages de chargement
             const msgs = ['Connexion en cours…','Authentification du flux…','Établissement P2P…','Synchronisation vidéo…','Presque prêt…'];
             let mi = 0;
             const msgTimer = setInterval(() => {
@@ -435,28 +438,34 @@
                 if (el) el.textContent = msgs[mi];
             }, 2500);
 
-            setTimeout(() => { frame.src = NINJA_URL; }, 400);
+            // Charger l'iframe
+            setTimeout(() => {
+                frame.src = NINJA_URL;
+            }, 300);
 
+            // Fallback 10s
             const fallback = setTimeout(() => {
-                if (!frame.src || frame.src === 'about:blank') frame.src = NINJA_URL;
-            }, 8000);
+                frame.src = NINJA_URL;
+            }, 10000);
 
             frame.onload = () => {
                 clearTimeout(fallback);
                 clearInterval(msgTimer);
                 const ls = document.getElementById('loading-screen');
                 if (ls) {
-                    ls.style.transition = 'opacity 0.6s ease';
-                    ls.style.opacity = '0';
-                    setTimeout(() => ls.style.display = 'none', 600);
+                    ls.style.transition = 'opacity 0.5s ease';
+                    ls.style.opacity    = '0';
+                    setTimeout(() => { ls.style.display = 'none'; }, 500);
                 }
             };
         }
 
-        // Au chargement : vérifier si session active
-        if (sessionStorage.getItem('auth') === 'ok') {
-            launchStream();
-        }
+        // ── Au chargement du DOM ─────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function() {
+            if (sessionStorage.getItem('auth') === 'ok') {
+                launchStream();
+            }
+        });
 
         // Live clock
         function updateClock() {
